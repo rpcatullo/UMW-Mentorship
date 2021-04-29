@@ -16,8 +16,8 @@ from keras.preprocessing.image import ImageDataGenerator
 from keras.regularizers import l2
 
 # 1.) Get all image path sets
-directory = 'C:/Users/rcatu/Downloads/Spectograms-20210423T144630Z-001/Spectograms/{}'
-directory0 = 'C:/Users/rcatu/Downloads/Spectograms-20210423T144630Z-001/Spectograms'
+directory = 'C:/Users/rcatu/Downloads/Spectrograms-20210429T073650Z-001/Spectrograms/{}'
+directory0 = 'C:/Users/rcatu/Downloads/Spectrograms-20210429T073650Z-001/Spectrograms'
 alfaroi_set = [directory.format(i) for i in os.listdir(directory0) if 'alfaroi' in i]
 cinerascens_set = [directory.format(i) for i in os.listdir(directory0) if 'cinerascens' in i]
 lanciformis_set = [directory.format(i) for i in os.listdir(directory0) if 'lanciformis' in i]
@@ -27,8 +27,6 @@ discodactylus_set = [directory.format(i) for i in os.listdir(directory0) if 'dis
 fuscifacies_set = [directory.format(i) for i in os.listdir(directory0) if 'fuscifacies' in i]
 conspicillatus_set = [directory.format(i) for i in os.listdir(directory0) if 'conspicillatus' in i]
 margaritifer_set = [directory.format(i) for i in os.listdir(directory0) if 'margaritifer' in i]
-
-print("Made sets")
 
 # 2.) Randomly Shuffle Images Before Splitting for Training and Testing
 random.shuffle(alfaroi_set)
@@ -40,8 +38,6 @@ random.shuffle(discodactylus_set)
 random.shuffle(fuscifacies_set)
 random.shuffle(conspicillatus_set)
 random.shuffle(margaritifer_set)
-
-print("Shuffled sets")
 
 # 3.) Training and Testing Image Sets
 alfaroi_train, alfaroi_test = train_test_split(alfaroi_set, test_size=0.25, random_state=42)
@@ -141,6 +137,8 @@ y_test = np.array(y_test)
 y_train = to_categorical(y_train)
 y_test = to_categorical(y_test)
 
+print("Training on " + str(len(X_train)) + " samples, validating on " + str(len(X_test)) + " samples.")
+
 #Standardize data
 datagen = ImageDataGenerator(featurewise_center=True, featurewise_std_normalization=True)
 
@@ -153,7 +151,7 @@ print("Finished preprocessing images")
 
 # 12.) Convolutional Neural Network
 
-DROPOUT_RATE = 0.2
+DROPOUT_RATE = 0.1
 
 model = Sequential()
 model.add(Conv2D(32, kernel_size=3, activation='relu', input_shape=(558, 543, 3), use_bias=True))
@@ -168,8 +166,12 @@ model.add(Conv2D(64, kernel_size=3, activation='relu', kernel_regularizer=l2(l=.
 model.add(MaxPooling2D(2, 2))
 model.add(Dropout(DROPOUT_RATE))
 
+model.add(Conv2D(128, kernel_size=3, activation='relu', kernel_regularizer=l2(l=.01), use_bias=True))
+model.add(MaxPooling2D(2, 2))
+model.add(Dropout(DROPOUT_RATE))
+
 model.add(Flatten())
-model.add(Dropout(0.8))
+model.add(Dropout(0.5))
 
 model.add(Dense(10, activation='softmax'))
 
@@ -181,7 +183,7 @@ print(model.summary())
 #14.) Compile and Train the Model
 model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
 es = EarlyStopping(monitor='val_loss', mode='min', verbose=1, patience=4)
-mc = ModelCheckpoint('original_standardized_architecture_with_regularization_increased-dropout_smaller-conv.h5', monitor='val_loss', mode='min', save_best_only=True, verbose=1)
+mc = ModelCheckpoint('regular_model_fixed_noise_four_sec_mel.h5', monitor='val_loss', mode='min', save_best_only=True, verbose=1)
 history = model.fit_generator(train_iterator, steps_per_epoch=len(train_iterator), epochs=30, validation_data=test_iterator, callbacks=[es, mc])
 #history = model.fit(X_train, y_train, validation_data=(X_test, y_test), epochs=30, callbacks=[es, mc])
 model.save("temp.h5")
